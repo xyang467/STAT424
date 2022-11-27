@@ -1,0 +1,84 @@
+---
+title: Appendix
+output:
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(readr)
+library(ggplot2)
+```
+
+# Data
+```{r}
+data = read_csv("data.csv",show_col_types = FALSE)
+print(data,n=nrow(data))
+```
+
+
+# Data Visualization
+
+```{r fig.width = 2.5, fig.height=3}
+ggplot(data, aes(x = Bluetooth, y = Battery,fill=Bluetooth)) +
+  geom_dotplot(binaxis='y', stackdir='center',binwidth = 0.2)+
+  labs(caption = "+ = ON   - = OFF", title = "Battery Consumption vs. Bluetooth")+
+  theme(text = element_text(size = 6)) 
+ggplot(data, aes(x = Brightness, y = Battery,fill=Brightness)) +
+  geom_dotplot(binaxis='y', stackdir='center',binwidth = 0.2)+
+  labs(caption = "+ = 75%  - = 25% ", title = "Battery Consumption vs. Brightness")+
+  theme(text = element_text(size = 6)) 
+ggplot(data, aes(x = Application, y = Battery,fill=Application)) +
+  geom_dotplot(binaxis='y', stackdir='center',binwidth = 0.2)+
+  labs(caption = "+ = ON   - = OFF", title = "Battery Consumption vs. Application")+
+  theme(text = element_text(size = 6)) 
+```
+
+
+# Model
+
+```{r}
+code = function(x) ifelse(x == '-', -1, 1)
+Data = data %>%
+  mutate_at(vars(Bluetooth:Application), code)
+fit = lm(Battery~Bluetooth*Brightness*Application, Data)
+summary(aov(fit))
+```
+
+```{r}
+2 * coef(fit)
+```
+
+# Model Diagnostics
+
+```{r fig.width = 5, fig.height=3.5}
+qqnorm(resid(fit))
+qqline(resid(fit),col="red")
+```
+
+```{r fig.width = 4, fig.height=3}
+Data$residual = resid(fit)
+Data$predict = predict(fit)
+# predict vs. residuals
+ggplot(Data)+
+  geom_point(aes(predict,residual))+
+  labs(title = "Residual Plot: predict vs. residuals")
+
+# Bluetooth vs. residuals
+ggplot(Data)+
+  geom_point(aes(Bluetooth,residual))+
+  labs(title = "Residual Plot: Bluetooth vs. residuals")
+
+# Application vs. residuals
+ggplot(Data)+
+  geom_point(aes(Application,residual))+
+  labs(title = "Residual Plot: Application vs. residuals")
+
+# Brightness vs. residuals
+ggplot(Data)+
+  geom_point(aes(Brightness,residual))+
+  labs(title = "Residual Plot: Brightness vs. residuals")
+```
